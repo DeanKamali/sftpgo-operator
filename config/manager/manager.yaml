@@ -5,13 +5,13 @@ metadata:
     control-plane: controller-manager
     app.kubernetes.io/name: sftpgo-operator
     app.kubernetes.io/managed-by: kustomize
-  name: system
+  name: sftpgo-operator-system
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: controller-manager
-  namespace: system
+  namespace: sftpgo-operator-system
   labels:
     control-plane: controller-manager
     app.kubernetes.io/name: sftpgo-operator
@@ -61,9 +61,9 @@ spec:
       - command:
         - /manager
         args:
-          - --leader-elect
+          - --leader-elect=false
           - --health-probe-bind-address=:8081
-        image: controller:latest
+        image: stackblaze/sftpgo-operator:latest
         name: manager
         ports: []
         securityContext:
