@@ -344,7 +344,7 @@ func (r *SftpGoServerReconciler) deploymentForServer(s *sftpgov1alpha1.SftpGoSer
 		Name:            "sftpgo",
 		Image:           spec.Image,
 		ImagePullPolicy: spec.ImagePullPolicy,
-		Args:            []string{"serve", "--config-file", "/etc/sftpgo/sftpgo.json"},
+		Args:            []string{"sftpgo", "serve", "--config-file", "/etc/sftpgo/sftpgo.json"},
 		Ports: []corev1.ContainerPort{
 			{Name: "sftp", ContainerPort: r.getSFTPPort(spec), Protocol: corev1.ProtocolTCP},
 			{Name: "web", ContainerPort: r.getWebPort(spec), Protocol: corev1.ProtocolTCP},
