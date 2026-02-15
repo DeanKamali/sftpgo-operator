@@ -92,8 +92,14 @@ func (r *SftpGoServerReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	spec := r.applyDefaults(server)
 
 	// Create or update ConfigMap
-	configMap := r.configMapForServer(server)
+	desiredCM := r.configMapForServer(server)
+	configMap := &corev1.ConfigMap{}
+	configMap.Name = desiredCM.Name
+	configMap.Namespace = desiredCM.Namespace
 	if err := r.createOrUpdate(ctx, server, configMap, func() error {
+		configMap.Data = desiredCM.Data
+		configMap.Labels = desiredCM.Labels
+		configMap.Annotations = desiredCM.Annotations
 		return controllerutil.SetControllerReference(server, configMap, r.Scheme)
 	}); err != nil {
 		log.Error(err, "Failed to create/update ConfigMap")
@@ -119,8 +125,14 @@ func (r *SftpGoServerReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	// Create or update Deployment
-	deployment := r.deploymentForServer(server)
+	desiredDep := r.deploymentForServer(server)
+	deployment := &appsv1.Deployment{}
+	deployment.Name = desiredDep.Name
+	deployment.Namespace = desiredDep.Namespace
 	if err := r.createOrUpdate(ctx, server, deployment, func() error {
+		deployment.Labels = desiredDep.Labels
+		deployment.Spec = desiredDep.Spec
+		deployment.Annotations = desiredDep.Annotations
 		return controllerutil.SetControllerReference(server, deployment, r.Scheme)
 	}); err != nil {
 		log.Error(err, "Failed to create/update Deployment")
@@ -140,8 +152,16 @@ func (r *SftpGoServerReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	// Create or update Service
-	svc := r.serviceForServer(server)
+	desiredSvc := r.serviceForServer(server)
+	svc := &corev1.Service{}
+	svc.Name = desiredSvc.Name
+	svc.Namespace = desiredSvc.Namespace
 	if err := r.createOrUpdate(ctx, server, svc, func() error {
+		svc.Labels = desiredSvc.Labels
+		svc.Spec.Ports = desiredSvc.Spec.Ports
+		svc.Spec.Selector = desiredSvc.Spec.Selector
+		svc.Spec.Type = desiredSvc.Spec.Type
+		svc.Annotations = desiredSvc.Annotations
 		return controllerutil.SetControllerReference(server, svc, r.Scheme)
 	}); err != nil {
 		log.Error(err, "Failed to create/update Service")
@@ -226,7 +246,7 @@ func (r *SftpGoServerReconciler) createOrUpdate(ctx context.Context, owner clien
 
 func (r *SftpGoServerReconciler) configMapForServer(s *sftpgov1alpha1.SftpGoServer) *corev1.ConfigMap {
 	spec := r.applyDefaults(s)
-	config := sftpgoMinimalConfig(spec)
+	config := sftpgoMinimalConfig(spec, spec.AdminSecretRef != nil)
 
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -239,13 +259,19 @@ func (r *SftpGoServerReconciler) configMapForServer(s *sftpgov1alpha1.SftpGoServ
 	}
 }
 
-func sftpgoMinimalConfig(spec *sftpgov1alpha1.SftpGoServerSpec) string {
+func sftpgoMinimalConfig(spec *sftpgov1alpha1.SftpGoServerSpec, createDefaultAdmin bool) string {
 	sftpPort := int32(2022)
 	if spec.SFTPPort > 0 {
 		sftpPort = spec.SFTPPort
 	}
 	if spec.Config.SFTP != nil && spec.Config.SFTP.Port > 0 {
 		sftpPort = spec.Config.SFTP.Port
+	}
+	dataProvider := fmt.Sprintf(`"driver": "%s",
+    "name": "/srv/sftpgo/sftpgo.db"`, spec.StorageBackend)
+	if createDefaultAdmin {
+		dataProvider += `,
+    "create_default_admin": true`
 	}
 	return fmt.Sprintf(`{
   "sftpd": {
@@ -256,13 +282,12 @@ func sftpgoMinimalConfig(spec *sftpgov1alpha1.SftpGoServerSpec) string {
     "password_authentication": true
   },
   "data_provider": {
-    "driver": "%s",
-    "name": "/srv/sftpgo/sftpgo.db"
+    %s
   },
   "httpd": {
     "bindings": [{"port": 8080, "address": "", "enable_web_admin": true, "enable_rest_api": true}]
   }
-}`, sftpPort, spec.StorageBackend)
+}`, sftpPort, dataProvider)
 }
 
 func (r *SftpGoServerReconciler) pvcForServer(s *sftpgov1alpha1.SftpGoServer) *corev1.PersistentVolumeClaim {
@@ -350,6 +375,29 @@ func (r *SftpGoServerReconciler) deploymentForServer(s *sftpgov1alpha1.SftpGoSer
 			{Name: "web", ContainerPort: r.getWebPort(spec), Protocol: corev1.ProtocolTCP},
 		},
 		VolumeMounts: volumeMounts,
+	}
+	if spec.AdminSecretRef != nil {
+		secretName := spec.AdminSecretRef.Name
+		container.Env = []corev1.EnvVar{
+			{
+				Name: "SFTPGO_DEFAULT_ADMIN_USERNAME",
+				ValueFrom: &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
+						Key:                  "username",
+					},
+				},
+			},
+			{
+				Name: "SFTPGO_DEFAULT_ADMIN_PASSWORD",
+				ValueFrom: &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
+						Key:                  "password",
+					},
+				},
+			},
+		}
 	}
 	if spec.Resources != nil {
 		container.Resources = *spec.Resources

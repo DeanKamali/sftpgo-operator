@@ -26,12 +26,20 @@ import (
 	sftpgov1alpha1 "github.com/sftpgo/sftpgo-operator/api/v1alpha1"
 )
 
-// Client is an SFTPGO REST API client
+// tokenResponse is the response from POST /api/v2/token
+type tokenResponse struct {
+	AccessToken string `json:"access_token"`
+	ExpiresAt   string `json:"expires_at"`
+}
+
+// Client is an SFTPGO REST API client (uses JWT authentication)
 type Client struct {
 	BaseURL    string
 	HTTPClient *http.Client
 	Username   string
 	Password   string
+	token      string
+	tokenExp   time.Time
 }
 
 // NewClient creates a new SFTPGO API client
@@ -90,7 +98,9 @@ func (c *Client) GetUser(username string) (*UserPayload, error) {
 	if err != nil {
 		return nil, err
 	}
-	c.setAuth(req)
+	if err := c.setAuth(req); err != nil {
+		return nil, err
+	}
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
@@ -137,7 +147,9 @@ func (c *Client) upsertUser(method, pathSuffix string, payload *UserPayload) (*U
 	if err != nil {
 		return nil, err
 	}
-	c.setAuth(req)
+	if err := c.setAuth(req); err != nil {
+		return nil, err
+	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.HTTPClient.Do(req)
@@ -163,7 +175,9 @@ func (c *Client) DeleteUser(username string) error {
 	if err != nil {
 		return err
 	}
-	c.setAuth(req)
+	if err := c.setAuth(req); err != nil {
+		return err
+	}
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
@@ -177,10 +191,55 @@ func (c *Client) DeleteUser(username string) error {
 	return nil
 }
 
-func (c *Client) setAuth(req *http.Request) {
-	if c.Username != "" && c.Password != "" {
-		req.SetBasicAuth(c.Username, c.Password)
+// getToken obtains a JWT from SFTPGO (required for REST API)
+// SFTPGO expects GET /api/v2/token with Basic Auth
+func (c *Client) getToken() (string, error) {
+	if c.token != "" && time.Until(c.tokenExp) > 2*time.Minute {
+		return c.token, nil
 	}
+	req, err := http.NewRequest(http.MethodGet, c.BaseURL+"/api/v2/token", nil)
+	if err != nil {
+		return "", err
+	}
+	req.SetBasicAuth(c.Username, c.Password)
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("API returned %d", resp.StatusCode)
+	}
+	var tr tokenResponse
+	if err := json.NewDecoder(resp.Body).Decode(&tr); err != nil {
+		return "", err
+	}
+	if tr.AccessToken == "" {
+		return "", fmt.Errorf("empty access token")
+	}
+	c.token = tr.AccessToken
+	if tr.ExpiresAt != "" {
+		if t, err := time.Parse(time.RFC3339, tr.ExpiresAt); err == nil {
+			c.tokenExp = t
+		} else {
+			c.tokenExp = time.Now().Add(15 * time.Minute)
+		}
+	} else {
+		c.tokenExp = time.Now().Add(15 * time.Minute)
+	}
+	return c.token, nil
+}
+
+func (c *Client) setAuth(req *http.Request) error {
+	if c.Username == "" || c.Password == "" {
+		return nil
+	}
+	token, err := c.getToken()
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	return nil
 }
 
 // UserFromCR converts SftpGoUser CR to API payload
