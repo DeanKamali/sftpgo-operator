@@ -1,0 +1,31 @@
+apiVersion: sftpgo.sftpgo.io/v1alpha1
+kind: SftpGoUser
+metadata:
+  name: sftpgouser-sample
+  labels:
+    app.kubernetes.io/name: sftpgo-operator
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  username: sftpuser
+  status: enabled  # enabled | disabled
+  homeDir: /srv/sftpgo/data/sftpuser
+  password: changeme  # Use passwordSecretRef in production
+  # passwordSecretRef:
+  #   name: sftpuser-password
+  #   key: password
+  serverRef:
+    name: sftpgoserver-sample
+    # namespace: default  # omit for same namespace
+  permissions:
+    - "*"
+  # quota:
+  #   size: 1073741824  # 1GB
+  #   files: 1000
+  # bandwidthLimits:
+  #   upload: 1048576    # 1MB/s
+  #   download: 10485760 # 10MB/s
+  # maxSessions: 5
+  # allowedIP:
+  #   - 192.168.1.0/24
+  # deniedIP:
+  #   - 10.0.0.0/8

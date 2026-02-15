@@ -1,0 +1,497 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.18.0
+  name: sftpgousers.sftpgo.sftpgo.io
+spec:
+  group: sftpgo.sftpgo.io
+  names:
+    kind: SftpGoUser
+    listKind: SftpGoUserList
+    plural: sftpgousers
+    singular: sftpgouser
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.username
+      name: Username
+      type: string
+    - jsonPath: .spec.status
+      name: Status
+      type: string
+    - jsonPath: .spec.homeDir
+      name: HomeDir
+      type: string
+    - jsonPath: .spec.serverRef.name
+      name: Server
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: SftpGoUser is the Schema for the sftpgousers API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: SftpGoUserSpec defines the desired state of SftpGoUser
+            properties:
+              allowedIP:
+                description: Allowed IP addresses (CIDR notation)
+                items:
+                  type: string
+                type: array
+              bandwidthLimits:
+                description: Bandwidth limits
+                properties:
+                  download:
+                    description: Download speed limit (bytes/sec, 0 = unlimited)
+                    format: int64
+                    type: integer
+                  upload:
+                    description: Upload speed limit (bytes/sec, 0 = unlimited)
+                    format: int64
+                    type: integer
+                type: object
+              deniedIP:
+                description: Denied IP addresses (CIDR notation)
+                items:
+                  type: string
+                type: array
+              email:
+                description: Email is the user's email address
+                type: string
+              filesystem:
+                description: Filesystem configuration
+                properties:
+                  azure:
+                    description: Azure configuration
+                    properties:
+                      accountKey:
+                        description: Account key reference
+                        properties:
+                          key:
+                            description: Key in the secret
+                            type: string
+                          name:
+                            description: Name of the secret
+                            type: string
+                        required:
+                        - key
+                        - name
+                        type: object
+                      accountName:
+                        description: Account name
+                        type: string
+                      container:
+                        description: Container name
+                        type: string
+                      endpointSuffix:
+                        description: Endpoint suffix
+                        type: string
+                      keyPrefix:
+                        description: Key prefix
+                        type: string
+                      sasURL:
+                        description: SAS URL
+                        type: string
+                      uploadBlockSize:
+                        description: Upload block size
+                        format: int64
+                        type: integer
+                    type: object
+                  crypt:
+                    description: Crypt configuration
+                    properties:
+                      passphrase:
+                        description: Passphrase reference
+                        properties:
+                          key:
+                            description: Key in the secret
+                            type: string
+                          name:
+                            description: Name of the secret
+                            type: string
+                        required:
+                        - key
+                        - name
+                        type: object
+                      physicalPath:
+                        description: Physical path (to encrypt)
+                        type: string
+                    type: object
+                  gcs:
+                    description: GCS configuration
+                    properties:
+                      bucket:
+                        description: Bucket name
+                        type: string
+                      credentialsFile:
+                        description: Credentials file path
+                        type: string
+                      keyPrefix:
+                        description: Key prefix
+                        type: string
+                      storageClass:
+                        description: Storage class
+                        type: string
+                    type: object
+                  provider:
+                    description: 'Provider type: osfs, s3fs, gcsfs, azureblob, crypt,
+                      encrypted, sftpfs'
+                    enum:
+                    - osfs
+                    - s3fs
+                    - gcsfs
+                    - azureblob
+                    - crypt
+                    - encrypted
+                    - sftpfs
+                    type: string
+                  s3:
+                    description: S3 configuration
+                    properties:
+                      accessKey:
+                        description: Access key
+                        type: string
+                      accessSecret:
+                        description: Access secret reference
+                        properties:
+                          key:
+                            description: Key in the secret
+                            type: string
+                          name:
+                            description: Name of the secret
+                            type: string
+                        required:
+                        - key
+                        - name
+                        type: object
+                      acl:
+                        description: ACL
+                        type: string
+                      bucket:
+                        description: Bucket name
+                        type: string
+                      endpoint:
+                        description: Endpoint URL
+                        type: string
+                      keyPrefix:
+                        description: Key prefix
+                        type: string
+                      region:
+                        description: Region
+                        type: string
+                      storageClass:
+                        description: Storage class
+                        type: string
+                      uploadPartSize:
+                        description: Upload part size
+                        format: int64
+                        type: integer
+                    type: object
+                  sftp:
+                    description: SFTP configuration
+                    properties:
+                      host:
+                        description: Host
+                        type: string
+                      password:
+                        description: Password reference
+                        properties:
+                          key:
+                            description: Key in the secret
+                            type: string
+                          name:
+                            description: Name of the secret
+                            type: string
+                        required:
+                        - key
+                        - name
+                        type: object
+                      port:
+                        description: Port
+                        format: int32
+                        type: integer
+                      privateKey:
+                        description: Private key reference
+                        properties:
+                          key:
+                            description: Key in the secret
+                            type: string
+                          name:
+                            description: Name of the secret
+                            type: string
+                        required:
+                        - key
+                        - name
+                        type: object
+                      remotePath:
+                        description: Remote path
+                        type: string
+                      username:
+                        description: Username
+                        type: string
+                    type: object
+                type: object
+              filters:
+                description: Additional settings
+                properties:
+                  allowedCommands:
+                    description: Command restrictions
+                    items:
+                      type: string
+                    type: array
+                  externalAuthHook:
+                    description: External auth hook
+                    type: string
+                  requirePasswordChange:
+                    description: Require password change
+                    type: boolean
+                  requireTOTP:
+                    description: Require TOTP
+                    type: boolean
+                  timeIntervals:
+                    description: Time-based access restrictions
+                    items:
+                      description: TimeInterval defines a time interval for access
+                      properties:
+                        days:
+                          description: Days of week (0=Sunday, 1=Monday, etc.)
+                          items:
+                            type: integer
+                          type: array
+                        end:
+                          description: End hour (0-23)
+                          type: integer
+                        start:
+                          description: Start hour (0-23)
+                          type: integer
+                      type: object
+                    type: array
+                type: object
+              groups:
+                description: Groups the user belongs to
+                items:
+                  type: string
+                type: array
+              homeDir:
+                description: HomeDir is the user's home directory
+                type: string
+              maxConcurrentTransfers:
+                description: Concurrent transfers limit
+                type: integer
+              maxSessions:
+                description: Max sessions allowed
+                type: integer
+              password:
+                description: Password is the user's password (required if not using
+                  public key)
+                type: string
+              passwordSecretRef:
+                description: PasswordSecretRef is a reference to a secret containing
+                  the password
+                properties:
+                  key:
+                    description: Key in the secret
+                    type: string
+                  name:
+                    description: Name of the secret
+                    type: string
+                required:
+                - key
+                - name
+                type: object
+              permissions:
+                description: Permissions defines the user's permissions
+                items:
+                  type: string
+                type: array
+              protocols:
+                description: Protocols allowed (SFTP, FTP, WebDAV, HTTP)
+                items:
+                  type: string
+                type: array
+              publicKeys:
+                description: PublicKeys is a list of public keys for SSH authentication
+                items:
+                  type: string
+                type: array
+              publicKeysSecretRef:
+                description: PublicKeysSecretRef is a reference to a secret containing
+                  public keys
+                properties:
+                  key:
+                    description: Key in the secret
+                    type: string
+                  name:
+                    description: Name of the secret
+                    type: string
+                required:
+                - key
+                - name
+                type: object
+              quota:
+                description: Quota defines storage quota (in bytes)
+                properties:
+                  files:
+                    description: Maximum number of files
+                    type: integer
+                  size:
+                    description: Total size allowed (in bytes)
+                    format: int64
+                    type: integer
+                type: object
+              rateLimits:
+                description: Upload/Download limits (in bytes/sec)
+                properties:
+                  average:
+                    description: Average rate (bytes/sec)
+                    format: int64
+                    type: integer
+                  burst:
+                    description: Burst size (bytes)
+                    format: int64
+                    type: integer
+                type: object
+              serverRef:
+                description: The SftpGoServer this user belongs to
+                properties:
+                  name:
+                    description: Name of the SftpGoServer
+                    type: string
+                  namespace:
+                    description: Namespace of the SftpGoServer (defaults to same namespace)
+                    type: string
+                required:
+                - name
+                type: object
+              status:
+                description: Status defines if the user is enabled or disabled
+                enum:
+                - enabled
+                - disabled
+                type: string
+              username:
+                description: Username is the SFTPGO username
+                type: string
+              virtualFolders:
+                description: VirtualFolders defines virtual folders for the user
+                items:
+                  description: VirtualFolder defines a virtual folder
+                  properties:
+                    physicalPath:
+                      description: Physical path (on the host)
+                      type: string
+                    quota:
+                      description: Quota for this folder (in bytes)
+                      format: int64
+                      type: integer
+                    virtualPath:
+                      description: Virtual path
+                      type: string
+                  required:
+                  - physicalPath
+                  - virtualPath
+                  type: object
+                type: array
+            required:
+            - homeDir
+            - serverRef
+            - username
+            type: object
+          status:
+            description: SftpGoUserStatus defines the observed state of SftpGoUser
+            properties:
+              conditions:
+                description: Conditions is the list of conditions
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              lastSynced:
+                description: LastSynced is the last time the user was synced
+                format: date-time
+                type: string
+              phase:
+                description: Phase is the current phase
+                type: string
+              userID:
+                description: UserID is the SFTPGO internal user ID
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

@@ -1,0 +1,26 @@
+apiVersion: sftpgo.sftpgo.io/v1alpha1
+kind: SftpGoServer
+metadata:
+  name: sftpgoserver-sample
+  labels:
+    app.kubernetes.io/name: sftpgo-operator
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  image: docker.io/drakkan/sftpgo:latest
+  replicas: 1
+  sftpPort: 2022
+  webPort: 8080
+  storageBackend: sqlite
+  dataVolume:
+    size: 10Gi
+    mountPath: /srv/sftpgo
+  config:
+    sftp:
+      enabled: true
+      passwordAuthentication: true
+      keyboardInteractiveAuth: true
+    http:
+      enabled: true
+  # Optional: reference to secret with admin API credentials for user management
+  # adminSecretRef:
+  #   name: sftpgo-admin-secret  # Secret must have "username" and "password" keys

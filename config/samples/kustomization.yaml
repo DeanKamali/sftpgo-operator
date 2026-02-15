@@ -1,0 +1,5 @@
+## Append samples of your project ##
+resources:
+- sftpgo_v1alpha1_sftpgoserver.yaml
+- sftpgo_v1alpha1_sftpgouser.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples
